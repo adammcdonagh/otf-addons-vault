@@ -25,6 +25,10 @@ Credentials can be set via config using specific named variables alongside the p
 
 If these variables are set in the environment, then these will be used if not set elsewhere.
 
+# Vault KV Secrets Engine Version
+
+The default version is v1. This can be overridden by setting the environment variable `VAULT_API_VER` to `v2` (or specifying the variable manually)
+
 # Variable Lookup
 
 Variables can be looked up using the `vault` plugin. This is done using standard Jinja2 syntax e.g;

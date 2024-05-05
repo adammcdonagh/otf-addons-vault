@@ -55,6 +55,12 @@ def run(**kwargs):  # type: ignore[no-untyped-def]
         else os.environ.get("VAULT_ADDR")
     )
 
+    vault_api_version = (
+        globals_["VAULT_API_VER"]
+        if globals_ and "VAULT_API_VER" in globals_
+        else os.environ.get("VAULT_API_VER", "v1")
+    )
+
     result = None
     try:
         client = hvac.Client(
@@ -62,17 +68,24 @@ def run(**kwargs):  # type: ignore[no-untyped-def]
             token=vault_token,
         )
 
-        result = client.secrets.kv.v2.read_secret_version(
-            path=kwargs["key"],
-        )
-
         # Result will be some JSON, so parse it and if an attribute name is provided
         # return that value, else return the value attribute (if it exists, otherwise
         # raise an error)
         value_attribute = kwargs.get("attribute", "value")
-        result = result["data"]
-        if "data" in result and value_attribute in result["data"]:
-            result = result["data"][value_attribute]
+
+        if vault_api_version == "v1":
+            result = client.secrets.kv.v1.read_secret(
+                path=kwargs["key"],
+            )
+            result = result["data"]
+        else:
+            result = client.secrets.kv.v2.read_secret_version(
+                path=kwargs["key"],
+            )
+            result = result["data"]["data"]
+
+        if value_attribute in result:
+            result = result[value_attribute]
         else:
             raise FileNotFoundError(f"Secret not found: {kwargs['key']}")
 
@@ -97,8 +110,6 @@ def run(**kwargs):  # type: ignore[no-untyped-def]
 
     # Escape any escape characters so they can be stored in JSON as a string
     if result:
-        # Escape any newline characters
-        result = result.replace("\n", "\\n")
         result = json.dumps(result)
         # Remove the leading and trailing quotes
         result = result[1:-1]
