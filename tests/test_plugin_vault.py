@@ -46,10 +46,11 @@ def test_vault_plugin_param_name_not_found(vault_service):
     assert ex.value.args[0] == f"Secret not found: does_not_exist"
 
 
-def test_vault_plugin(vault_service):
+def test_vault_plugin(vault_service_v1):
+    os.environ["VAULT_API_VER"] = "v1"
     expected = "test1234"
     # Populate the vault with a test value
-    vault_service.secrets.kv.v2.create_or_update_secret(
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
         path="some-secret",
         secret=dict(value=expected),
     )
@@ -60,7 +61,7 @@ def test_vault_plugin(vault_service):
 
     expected = "mySecretPassword"
     # Insert a new secret, but use a different attribute name
-    vault_service.secrets.kv.v2.create_or_update_secret(
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
         path="some-secret-password",
         secret=dict(password=expected),
     )
@@ -70,10 +71,38 @@ def test_vault_plugin(vault_service):
     assert result == expected
 
 
-def test_vault_lookup_attribute_missing(vault_service):
+def test_vault_plugin_v1(vault_service_v1):
+
+    os.environ["VAULT_API_VER"] = "v1"
     expected = "test1234"
     # Populate the vault with a test value
-    vault_service.secrets.kv.v2.create_or_update_secret(
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
+        path="some-secret",
+        secret=dict(value=expected),
+    )
+
+    result = run(key="some-secret")
+
+    assert result == expected
+
+    expected = "mySecretPassword1"
+    # Insert a new secret, but use a different attribute name
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
+        path="some-secret-password1",
+        secret=dict(password=expected),
+    )
+
+    result = run(key="some-secret-password1", attribute="password")
+
+    del os.environ["VAULT_API_VER"]
+    assert result == expected
+
+
+def test_vault_lookup_attribute_missing(vault_service_v2):
+    os.environ["VAULT_API_VER"] = "v2"
+    expected = "test1234"
+    # Populate the vault with a test value
+    vault_service_v2.secrets.kv.v2.create_or_update_secret(
         path="some-secret",
         secret=dict(value=expected),
     )
@@ -82,7 +111,8 @@ def test_vault_lookup_attribute_missing(vault_service):
         run(key="some-secret", attribute="does_not_exist")
 
 
-def test_config_loader_using_vault_plugin(vault_service, tmpdir):
+def test_config_loader_using_vault_plugin(vault_service_v1, tmpdir):
+    os.environ["VAULT_API_VER"] = "v1"
     json_obj = {
         "testLookup": "{{ lookup('hashicorp.vault', key='my_test_secret') }}",
     }
@@ -99,7 +129,7 @@ def test_config_loader_using_vault_plugin(vault_service, tmpdir):
     # Test with a multi line string to make sure that it doesn't break the parser
     expected = """config_loader_test_1234\\nanother_line"""
 
-    vault_service.secrets.kv.v2.create_or_update_secret(
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
         path="my_test_secret",
         secret=dict(value=expected),
     )
@@ -112,7 +142,8 @@ def test_config_loader_using_vault_plugin(vault_service, tmpdir):
     assert config_loader.get_global_variables()["testLookup"] == expected
 
 
-def test_config_loader_using_vault_plugin_custom_attribute(vault_service, tmpdir):
+def test_config_loader_using_vault_plugin_custom_attribute(vault_service_v1, tmpdir):
+    os.environ["VAULT_API_VER"] = "v1"
     json_obj = {
         "testLookup": "{{ lookup('hashicorp.vault', key='my_test_secret', attribute='password' ) }}",
     }
@@ -129,7 +160,7 @@ def test_config_loader_using_vault_plugin_custom_attribute(vault_service, tmpdir
     # Test with a multi line string to make sure that it doesn't break the parser
     expected = """some_random_password"""
 
-    vault_service.secrets.kv.v2.create_or_update_secret(
+    vault_service_v1.secrets.kv.v1.create_or_update_secret(
         path="my_test_secret",
         secret=dict(password=expected),
     )
