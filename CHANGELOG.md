@@ -1,5 +1,9 @@
 # Changelog
 
+## v24.18.3
+
+- Fix revert newline secrets change
+
 ## v24.18.2
 
 - Fix issue with multiline secrets

@@ -110,6 +110,7 @@ def run(**kwargs):  # type: ignore[no-untyped-def]
 
     # Escape any escape characters so they can be stored in JSON as a string
     if result:
+        result = result.replace("\n", "\\n")
         result = json.dumps(result)
         # Remove the leading and trailing quotes
         result = result[1:-1]
