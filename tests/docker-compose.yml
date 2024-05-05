@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  vault:
+    hostname: vault
+    container_name: vault
+    image: vault:1.13.3
+    environment:
+      VAULT_ADDR: "http://0.0.0.0:8200"
+      VAULT_API_ADDR: "http://0.0.0.0:8200"
+    ports:
+      - "127.0.0.1:8200:8200"
+    networks:
+      test-network:
+        ipv4_address: 172.16.0.11
+    volumes:
+      - ./volumes/vault/file:/vault/file:rw
+    cap_add:
+      - IPC_LOCK
+    entrypoint: vault server -dev -dev-listen-address="0.0.0.0:8200" -dev-root-token-id="root"
+
+networks:
+  test-network:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.0.0/24
+          gateway: 172.16.0.1
